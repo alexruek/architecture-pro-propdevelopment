@@ -1,5 +1,0 @@
-NAME                     READY   STATUS    RESTARTS   AGE     IP              NODE       NOMINATED NODE   READINESS GATES
-admin-back-end-api-app   1/1     Running   0          8m18s   10.244.120.69   minikube   <none>           <none>
-admin-front-end-app      1/1     Running   0          8m18s   10.244.120.68   minikube   <none>           <none>
-back-end-api-app         1/1     Running   0          8m18s   10.244.120.67   minikube   <none>           <none>
-front-end-app            1/1     Running   0          8m18s   10.244.120.70   minikube   <none>           <none>

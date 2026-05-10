@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: prop-network
-  labels:
-    name: prop-network
-    project: propdevelopment
-    purpose: network-policy-task

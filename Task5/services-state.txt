@@ -1,5 +1,0 @@
-NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-admin-back-end-api-app   ClusterIP   10.106.248.22    <none>        80/TCP    8m36s
-admin-front-end-app      ClusterIP   10.109.137.146   <none>        80/TCP    8m36s
-back-end-api-app         ClusterIP   10.103.200.166   <none>        80/TCP    8m36s
-front-end-app            ClusterIP   10.100.162.63    <none>        80/TCP    8m36s
