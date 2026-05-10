@@ -1,0 +1,30 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: RequestResponse
+    verbs: ["create", "delete", "update", "patch"]
+    resources:
+      - group: ""
+        resources: ["pods", "secrets", "configmaps", "serviceaccounts"]
+      - group: "rbac.authorization.k8s.io"
+        resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+  - level: Metadata
+    verbs: ["get", "list", "watch"]
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch", "list"]
+    resources:
+      - group: ""
+        resources: ["endpoints", "services"]
+  - level: None
+    userGroups: ["system:authenticated"]
+    nonResourceURLs:
+      - "/api*"
+      - "/version"
+  - level: Metadata
+    resources:
+      - group: "*"
+        resources: ["*"]

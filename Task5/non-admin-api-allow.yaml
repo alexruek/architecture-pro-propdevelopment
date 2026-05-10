@@ -1,0 +1,289 @@
+# =============================================================================
+# Сетевые политики Kubernetes
+# =============================================================================
+# Архитектура изоляции:
+#   - front-end         <--> back-end-api          (разрешено)
+#   - admin-front-end   <--> admin-back-end-api     (разрешено)
+#   - Все остальное                                 (запрещено по умолчанию)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 1: Default Deny All
+# Запрещает весь входящий и исходящий трафик в namespace по умолчанию
+# Все, что не разрешено явно, блокируется
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector: {}        # применяется ко всем подам в namespace
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 2: Разрешить DNS (UDP/TCP 53)
+# Без DNS поды не смогут резолвить имена сервисов - необходимо для wget/curl
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector: {}        # для всех подов
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 3: front-end → back-end-api (Egress из front-end)
+# Разрешает исходящий трафик от front-end к back-end-api на порт 80
+# Контекст: Витрина продаж → API сервисов клиентов
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: front-end-to-back-end-api-egress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: front-end
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: back-end-api
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 4: back-end-api ← front-end (Ingress в back-end-api)
+# Разрешает входящий трафик в back-end-api от front-end на порт 80
+# Контекст: API сервисов клиентов принимает запросы от Витрины
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: back-end-api-from-front-end-ingress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: back-end-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: front-end
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 5: back-end-api → front-end (Egress из back-end-api)
+# Разрешает обратный трафик от back-end-api к front-end (двусторонняя связь)
+# Контекст: API может инициировать коллбеки или нотификации
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: back-end-api-to-front-end-egress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: back-end-api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: front-end
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 6: front-end ← back-end-api (Ingress во front-end)
+# Разрешает входящий трафик во front-end от back-end-api.
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: front-end-from-back-end-api-ingress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: front-end
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: back-end-api
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 7: admin-front-end → admin-back-end-api (Egress)
+# Разрешает исходящий трафик от admin-front-end к admin-back-end-api.
+# Контекст: Интерфейс CRM → API административных сервисов
+# ИЗОЛИРОВАН от пользовательской пары (front-end / back-end-api)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-front-end-to-admin-api-egress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-front-end
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: admin-back-end-api
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 8: admin-back-end-api ← admin-front-end (Ingress)
+# Разрешает входящий трафик в admin-back-end-api от admin-front-end
+# Контекст: API CRM принимает запросы от CRM-интерфейса
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-api-from-admin-front-end-ingress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-back-end-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: admin-front-end
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 9: admin-back-end-api → admin-front-end (Egress)
+# Двусторонняя связь в административной паре
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-api-to-admin-front-end-egress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-back-end-api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: admin-front-end
+      ports:
+        - port: 80
+          protocol: TCP
+
+---
+
+# -----------------------------------------------------------------------------
+# ПОЛИТИКА 10: admin-front-end ← admin-back-end-api (Ingress)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-front-end-from-admin-api-ingress
+  namespace: prop-network
+  labels:
+    task: "5"
+    project: propdevelopment
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-front-end
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: admin-back-end-api
+      ports:
+        - port: 80
+          protocol: TCP
