@@ -1,0 +1,43 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequirenonroot
+  annotations:
+    description: "Требование запуска контейнеров не от root и с readOnlyRootFilesystem"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireNonRoot
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequirenonroot
+
+        # Блокировка runAsUser == 0 в containers
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          container.securityContext.runAsUser == 0
+          msg := sprintf("Container '%v' must not run as UID 0 (root)", [container.name])
+        }
+
+        # Блокировка отсутствия readOnlyRootFilesystem в containers
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not container.securityContext.readOnlyRootFilesystem == true
+          msg := sprintf("Container '%v' must set securityContext.readOnlyRootFilesystem=true", [container.name])
+        }
+
+        # Блокировка отсутствия readOnlyRootFilesystem в initContainers
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          not container.securityContext.readOnlyRootFilesystem == true
+          msg := sprintf("Init container '%v' must set securityContext.readOnlyRootFilesystem=true", [container.name])
+        }
+
+        # Блокировка отсутствия runAsNonRoot на уровне пода
+        violation[{"msg": msg}] {
+          pod := input.review.object
+          not pod.spec.securityContext.runAsNonRoot == true
+          msg := "Pod must set spec.securityContext.runAsNonRoot=true"
+        }
