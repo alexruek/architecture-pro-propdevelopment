@@ -5,3 +5,16 @@
 /Task6/setup-audit.sh
 /Task6/simulate-incident.sh
 /Task7/VERIFICATION_GUIDE.md
+.DS_Store
+.idea/
+*.bkp
+.*bkp
+Task5/00-namespace.yaml
+Task5/01-deploy-services.sh
+Task5/02-verify.sh
+Task5/README.md
+Task5/applied-policies-dump.yaml
+Task5/architecture.md
+Task5/pods-state.txt
+Task5/services-state.txt
+Task6/audit.log
