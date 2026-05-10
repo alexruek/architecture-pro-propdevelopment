@@ -7,7 +7,7 @@ Mindmap классифицирует данные компании PropDevelopme
 
 ## Файл
 
-`security-mindmap.xml` — откройте в [draw.io](https://app.diagrams.net)
+`mindmap.drawio` — откройте в [draw.io](https://app.diagrams.net)
 
 ## Классификация данных
 
